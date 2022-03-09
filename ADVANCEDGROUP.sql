@@ -1,4 +1,4 @@
------ MARCH 7, 2022
+----- MARCH 7-9, 2022
 
 
 /*
@@ -195,3 +195,71 @@ ORDER BY Brand, Category
 
 --brand, category, model_year sütunlar? için Rollup kullanarak total sales hesaplamas? yap?n.
 --üç sütun için 4 farkl? gruplama varyasyonu üretiyor
+
+SELECT Brand,Category,Model_year, SUM(total_sales_price) total
+FROM sale.sales_summary
+GROUP BY 
+   ROLLUP(brand,Category,Model_year)
+order by Model_Year,Category
+
+
+SELECT Brand,Category,Model_year, SUM(total_sales_price) total
+FROM sale.sales_summary
+GROUP BY 
+   CUBE(brand,Category,Model_year)
+order by Model_Year,Category
+----- CUBE
+
+
+SELECT Brand,Category,Model_year, SUM(total_sales_price) total
+FROM sale.sales_summary
+GROUP BY 
+   CUBE(brand,Category,Model_year)
+
+
+
+
+
+
+--- SUMMARY TABLE OLUSTURMA
+SELECT	C.brand_name as Brand, D.category_name as Category, B.model_year as Model_Year,
+		ROUND (SUM (A.quantity * A.list_price * (1 - A.discount)), 0) total_sales_price
+INTO	sale.sales_summary
+FROM	sale.order_item A, product.product B, product.brand C, product.category D
+WHERE	A.product_id = B.product_id
+AND		B.brand_id = C.brand_id
+AND		B.category_id = D.category_id
+GROUP BY
+		C.brand_name, D.category_name, B.model_year
+
+order by Model_Year,Category
+
+---pivot table
+--Write a query that returns total sales amount by categories and model years.
+SELECT *
+FROM
+(
+SELECT Category, total_sales_price
+FROM sale.sales_summary
+) A
+PIVOT
+(
+	SUM(total_sales_price)
+	FOR Category
+	IN
+	([Audio & Video Accessories]
+	,[Bluetooth]
+	,[Car Electronics]
+	,[Computer Accessories]
+	,[Earbud]
+	,[gps]
+	,[Hi-Fi Systems]
+	,[Home Theater]
+	,[mp4 player]
+	,[Receivers Amplifiers]
+	,[Speakers]
+	,[Televisions & Accessories])
+) AS PIVOT_TABLE
+
+select distinct '[' + category + '],' from sale.sales_summary
+
