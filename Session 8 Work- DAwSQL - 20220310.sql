@@ -71,6 +71,18 @@ where	list_price > (
 			from	product.product
 			where	product_name = 'Pro-Series 49-Class Full HD Outdoor LED TV (Silver)'
 		)
+SELECT *
+FROM product.product
+WHERE  list_price > (
+			SELECT list_price
+			FROM product.product
+			WHERE product_name='Pro-Series 49-Class Full HD Outdoor LED TV (Silver)'
+			)  and category_id = (
+    SELECT category_id
+    FROM product.category
+    WHERE category_name LIKE '%Television%'
+	)
+
 
 
 -- Laurel Goldammer isimli müşterinin alışveriş yaptığı tarihte/tarihlerde alışveriş yapan tüm müşterileri listeleyin.
@@ -107,7 +119,25 @@ where	a.customer_id = b.customer_id and
 ;
 
 
-SELECT first_name,last_nameFROM sale.customerWHERE customer_id in(		SELECT customer_id		FROM sale.orders		where order_date in				(SELECT order_date				FROM sale.orders				WHERE customer_id =					(					SELECT customer_id					FROM sale.customer					WHERE first_name='Laurel' and last_name='Goldammer'					)					) and customer_id != (SELECT customer_id					FROM sale.customer					WHERE first_name='Laurel' and last_name='Goldammer'					)					)
+SELECT first_name,last_name
+FROM sale.customer
+WHERE customer_id in(
+		SELECT customer_id
+		FROM sale.orders
+		where order_date in
+				(SELECT order_date
+				FROM sale.orders
+				WHERE customer_id =
+					(
+					SELECT customer_id
+					FROM sale.customer
+					WHERE first_name='Laurel' and last_name='Goldammer'
+					)
+					) and customer_id != (SELECT customer_id
+					FROM sale.customer
+					WHERE first_name='Laurel' and last_name='Goldammer'
+					)
+					)
 
 
 
@@ -121,7 +151,7 @@ where	model_year = 2021 and
 			select	category_id
 			from	product.category
 			where	category_name in ('Game', 'gps', 'Home Theater')
-		)
+					)
 ;
 
 -- 2020 model olup Receivers Amplifiers kategorisindeki en pahalı üründen daha pahalı ürünleri listeleyin.
@@ -139,6 +169,19 @@ where	model_year = 2020 and
 order by list_price DESC
 
 
+SELECT *
+FROM  product.product
+WHERE  model_year=2020 and  list_price>
+				(
+				SELECT max(list_price)
+				FROM product.product
+				WHERE category_id = (
+					SELECT category_id
+					FROM product.category
+					WHERE  category_name='Receivers Amplifiers')
+					)
+
+
 -- Receivers Amplifiers kategorisindeki ürünlerin herhangi birinden yüksek fiyatlı ürünleri listeleyin.
 -- Ürün adı, model_yılı ve fiyat bilgilerini yüksek fiyattan düşük fiyata doğru sıralayınız.
 
@@ -154,6 +197,42 @@ where	model_year = 2020 and
 order by list_price DESC
 
 
+
+SELECT product_name, model_year, list_price
+FROM product.product
+WHERE model_year = 2020 
+    AND list_price > (
+        SELECT MAX(B.list_price)
+        FROM product.category A
+        JOIN product.product B
+        ON A.category_id = B.category_id
+        WHERE A.category_name = 'Receivers Amplifiers'
+    );
+
+
+SELECT product_name, model_year, list_price
+FROM  product.product
+WHERE  model_year=2020 and  list_price> ANY
+				(
+				SELECT list_price
+				FROM product.product
+				WHERE category_id = (
+					SELECT category_id
+					FROM product.category
+					WHERE  category_name='Receivers Amplifiers')
+					)
+order by list_price 
+
+--ANY operator:
+--Boolean değer döndürür.
+--Eğer subquery'nin değerlerinden herhangi biri koşulu karşılıyorsa TRUE döndürür. Yani aralıktaki değerlerden herhangi biri TRUE ise koşulun TRUE olacağı anlamına gelir.
+--ALL operator:
+--Boolean değer döndürür.
+--Ancak tüm subquery değerleri koşulu sağlıyorsa TRUE döndürür. Yani aralıktaki tüm değerler için işlem TRUE ise şart o zaman TRUE olacaktır.
+--SELECT, WHERE ve HAVING statement'ları ile birlikte kullanılır.
+
+
+---EXISTS
 -- correleted sub queries
 -- 'Apple - Pre-Owned iPad 3 - 32GB - White' isimli ürünün hiç sipariş edilmediği eyaletleri listeleyiniz.
 -- Not: Eyalet olarak müşterinin adres bilgisini baz alınız.
@@ -171,6 +250,22 @@ where	not exists (
 		)
 ;
 
+SELECT  DISTINCT [state]
+FROM sale.customer
+WHERE customer_id   NOT EXISTS (SELECT DISTINCT [state]
+				  from  sale.customer
+                  where customer_id in
+					(SELECT customer_id
+					FROM sale.orders
+					WHERE order_id in(
+							SELECT order_id
+							FROM sale.order_item
+							WHERE product_id= (
+									SELECT product_id
+									FROM  product.product
+									WHERE product_name='Apple - Pre-Owned iPad 3 - 32GB - White' ))))
+									
+									
 -- 2020-01-01 tarihinden önce sipariş vermeyen müşterileri döndüren bir sorgu yazın. 
 -- Bu sorguda 2020-01-01 tarihinden önce sipariş vermiş bir müşteri varsa sorgu herhangi bir sonuç döndürmemelidir.
 
@@ -184,6 +279,10 @@ where	a.customer_id = b.customer_id and
 					b.customer_id = c.customer_id
 		)
 ;
+
+
+
+
 
 -- Jerald Berray isimli müşterinin son siparişinden önce sipariş vermiş 
 -- ve Austin şehrinde ikamet eden müşterileri listeleyin.
